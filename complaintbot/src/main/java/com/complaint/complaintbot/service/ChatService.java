@@ -2,6 +2,7 @@ package com.complaint.complaintbot.service;
 
 import com.complaint.complaintbot.dto.ChatResponse;
 import com.complaint.complaintbot.dto.ChatSummaryDto;
+import com.complaint.complaintbot.dto.ComplaintFilingResult;
 import com.complaint.complaintbot.dto.MessageDto;
 import com.complaint.complaintbot.entity.Chat;
 import com.complaint.complaintbot.entity.Message;
@@ -21,6 +22,7 @@ public class ChatService {
     private final ChatRepository chatRepository;
     private final MessageRepository messageRepository;
     private final GeminiChatService geminiChatService;
+    private final ComplaintFilingService complaintFilingService;
 
     /** List all chats, newest first, without message bodies. */
     public List<ChatSummaryDto> listChats() {
@@ -42,63 +44,81 @@ public class ChatService {
     /** Start a brand-new chat with the given first message. */
     @Transactional
     public ChatResponse createChat(String userMessage) {
-        // Create and persist the chat
         Chat chat = new Chat();
         chat.setTitle(userMessage.length() > 60 ? userMessage.substring(0, 60) + "…" : userMessage);
         chatRepository.save(chat);
 
-        // Persist user message
-        Message userMsg = new Message();
-        userMsg.setChatId(chat.getId());
-        userMsg.setRole(Message.MessageRole.USER);
-        userMsg.setContent(userMessage);
-        messageRepository.save(userMsg);
+        Message userMsg = persistMessage(chat.getId(), Message.MessageRole.USER, userMessage);
 
-        // Call Gemini (no prior history)
         String reply = geminiChatService.chat(List.of(), userMessage);
 
-        // Persist assistant reply
-        Message assistantMsg = new Message();
-        assistantMsg.setChatId(chat.getId());
-        assistantMsg.setRole(Message.MessageRole.ASSISTANT);
-        assistantMsg.setContent(reply);
-        messageRepository.save(assistantMsg);
+        Message assistantMsg = persistMessage(chat.getId(), Message.MessageRole.ASSISTANT, reply);
 
-        List<MessageDto> messages = List.of(MessageDto.from(userMsg), MessageDto.from(assistantMsg));
-        return ChatResponse.from(chat, messages);
+        return ChatResponse.from(chat, List.of(MessageDto.from(userMsg), MessageDto.from(assistantMsg)));
     }
 
-    /** Continue an existing chat — loads full history and sends it to Gemini for context. */
+    /**
+     * Continue an existing chat.
+     * If the chat session is AWAITING_OTP, the user's message is treated as the OTP
+     * and forwarded to ComplaintFilingService to continue the browser flow.
+     */
     @Transactional
     public ChatResponse continueChat(UUID chatId, String userMessage) {
         Chat chat = chatRepository.findById(chatId)
                 .orElseThrow(() -> new IllegalArgumentException("Chat not found: " + chatId));
 
-        // Load prior history for AI context
-        List<Message> history = messageRepository.findByChatIdOrderByCreatedAtAsc(chatId);
+        persistMessage(chatId, Message.MessageRole.USER, userMessage);
 
-        // Persist new user message
-        Message userMsg = new Message();
-        userMsg.setChatId(chatId);
-        userMsg.setRole(Message.MessageRole.USER);
-        userMsg.setContent(userMessage);
-        messageRepository.save(userMsg);
+        String reply;
+        if (complaintFilingService.isAwaitingOtp(chatId)) {
+            // User is providing the OTP — route it to filing service
+            ComplaintFilingResult result = complaintFilingService.submitOtp(chatId, userMessage.trim());
+            reply = buildReplyFromFilingResult(result);
+        } else {
+            List<Message> history = messageRepository.findByChatIdOrderByCreatedAtAsc(chatId);
+            reply = geminiChatService.chat(history, userMessage);
+        }
 
-        // Call Gemini with full conversation history
-        String reply = geminiChatService.chat(history, userMessage);
-
-        // Persist assistant reply
-        Message assistantMsg = new Message();
-        assistantMsg.setChatId(chatId);
-        assistantMsg.setRole(Message.MessageRole.ASSISTANT);
-        assistantMsg.setContent(reply);
-        messageRepository.save(assistantMsg);
-
-        // Update chat's updatedAt
-        chatRepository.save(chat);
+        persistMessage(chatId, Message.MessageRole.ASSISTANT, reply);
+        chatRepository.save(chat); // bumps updatedAt
 
         List<MessageDto> allMessages = messageRepository.findByChatIdOrderByCreatedAtAsc(chatId)
                 .stream().map(MessageDto::from).toList();
         return ChatResponse.from(chat, allMessages);
+    }
+
+    /** Trigger the autonomous complaint filing flow for an existing chat. */
+    @Transactional
+    public ComplaintFilingResult fileComplaint(UUID chatId) {
+        // Grab the first user message as the complaint text
+        List<Message> history = messageRepository.findByChatIdOrderByCreatedAtAsc(chatId);
+        String firstUserMessage = history.stream()
+                .filter(m -> m.getRole() == Message.MessageRole.USER)
+                .map(Message::getContent)
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("No user message in chat: " + chatId));
+
+        ComplaintFilingResult result = complaintFilingService.fileComplaint(chatId, firstUserMessage);
+
+        // Persist result as an assistant message
+        persistMessage(chatId, Message.MessageRole.ASSISTANT, buildReplyFromFilingResult(result));
+
+        return result;
+    }
+
+    // ── Helpers ────────────────────────────────────────────────────────────────
+
+    private Message persistMessage(UUID chatId, Message.MessageRole role, String content) {
+        Message msg = new Message();
+        msg.setChatId(chatId);
+        msg.setRole(role);
+        msg.setContent(content);
+        return messageRepository.save(msg);
+    }
+
+    private String buildReplyFromFilingResult(ComplaintFilingResult result) {
+        if (result.awaitingOtp()) return result.message();
+        if (result.success()) return result.message() + "\n\nSteps:\n" + String.join("\n", result.stepSummaries());
+        return "Filing status: " + result.message();
     }
 }
