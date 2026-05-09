@@ -5,87 +5,112 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Complaint Assistant</title>
     <link rel="stylesheet" th:href="@{/css/chat.css}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div class="container">
-        <div class="top-actions">
-            <a th:href="@{/complaints}" class="btn">View All Complaints</a>
-        </div>
-
-        <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
-        <div th:if="${errorMessage}" class="alert alert-error" th:text="${errorMessage}"></div>
-
-        <div class="chat-container">
-            <div class="chat-header">
+    <div class="app-container">
+        <header class="chat-header">
+            <div class="header-info">
                 <h1>Complaint Assistant</h1>
                 <p>Tell me your issue and I will register it for you</p>
             </div>
+            <a th:href="@{/complaints}" class="btn-secondary">View All Complaints</a>
+        </header>
 
-            <div class="chat-body">
-                <form th:action="@{/chat/submit}" th:object="${complaintForm}" method="post" enctype="multipart/form-data">
-                    
-                    <div class="message-bot">
-                        <div class="bubble-bot">Hi! I'm the complaint assistant. What is your name?</div>
-                    </div>
-                    <div class="message-user">
-                        <div class="bubble-user">
-                            <div class="form-group">
-                                <input type="text" th:field="*{userName}" class="form-control" placeholder="Enter your name">
-                                <span th:if="${#fields.hasErrors('userName')}" th:errors="*{userName}" class="error-text"></span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="message-bot">
-                        <div class="bubble-bot">Where is the issue located?</div>
-                    </div>
-                    <div class="message-user">
-                        <div class="bubble-user">
-                            <div class="form-group">
-                                <input type="text" th:field="*{location}" class="form-control" placeholder="Enter location">
-                                <span th:if="${#fields.hasErrors('location')}" th:errors="*{location}" class="error-text"></span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="message-bot">
-                        <div class="bubble-bot">What type of issue is this?</div>
-                    </div>
-                    <div class="message-user">
-                        <div class="bubble-user">
-                            <div class="form-group">
-                                <input type="text" th:field="*{issueType}" class="form-control" placeholder="E.g. Plumbing, Electrical, Cleaning">
-                                <span th:if="${#fields.hasErrors('issueType')}" th:errors="*{issueType}" class="error-text"></span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="message-bot">
-                        <div class="bubble-bot">Please describe the issue in detail.</div>
-                    </div>
-                    <div class="message-user">
-                        <div class="bubble-user">
-                            <div class="form-group">
-                                <textarea th:field="*{issueDescription}" class="form-control" placeholder="Describe the issue..."></textarea>
-                                <span th:if="${#fields.hasErrors('issueDescription')}" th:errors="*{issueDescription}" class="error-text"></span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="message-bot">
-                        <div class="bubble-bot">Upload an image if you have one (Optional).</div>
-                    </div>
-                    <div class="message-user">
-                        <div class="bubble-user">
-                            <div class="form-group">
-                                <input type="file" name="image" class="form-control" accept="image/jpeg, image/png">
-                            </div>
-                            <button type="submit" class="btn" style="width: 100%; margin-top: 10px;">Raise Complaint</button>
-                        </div>
-                    </div>
-
-                </form>
+        <div class="chat-body">
+            
+            <div th:if="${successMessage}" class="alert alert-success">
+                <span th:text="${successMessage}">Complaint registered successfully!</span>
             </div>
+            <div th:if="${errorMessage}" class="alert alert-error">
+                <span th:text="${errorMessage}">Failed to register complaint.</span>
+            </div>
+
+            <!-- Bot Message 1: Ask for name -->
+            <div class="message bot">
+                <div class="bubble">What is your name?</div>
+            </div>
+
+            <form th:action="@{/chat/submit}" th:object="${complaintForm}" method="post" enctype="multipart/form-data" class="chat-form">
+                
+                <div class="message user">
+                    <div class="bubble action-bubble">
+                        <div class="form-group">
+                            <input type="text" th:field="*{userName}" class="form-control" placeholder="Enter your name..." required>
+                            <span th:if="${#fields.hasErrors('userName')}" th:errors="*{userName}" class="error-message">Name Error</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bot Message 2: Ask for location -->
+                <div class="message bot">
+                    <div class="bubble">Where is the issue located?</div>
+                </div>
+
+                <div class="message user">
+                    <div class="bubble action-bubble">
+                        <div class="form-group">
+                            <input type="text" th:field="*{location}" class="form-control" placeholder="Enter location (e.g., Block A, 3rd Floor)..." required>
+                            <span th:if="${#fields.hasErrors('location')}" th:errors="*{location}" class="error-message">Location Error</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bot Message 3: Ask for type -->
+                <div class="message bot">
+                    <div class="bubble">What type of issue is this?</div>
+                </div>
+
+                <div class="message user">
+                    <div class="bubble action-bubble">
+                        <div class="form-group">
+                            <select th:field="*{issueType}" class="form-control" required>
+                                <option value="" disabled selected>Select an issue type...</option>
+                                <option value="Maintenance">Maintenance</option>
+                                <option value="Electrical">Electrical</option>
+                                <option value="Plumbing">Plumbing</option>
+                                <option value="Cleanliness">Cleanliness</option>
+                                <option value="Security">Security</option>
+                                <option value="Other">Other</option>
+                            </select>
+                            <span th:if="${#fields.hasErrors('issueType')}" th:errors="*{issueType}" class="error-message">Type Error</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bot Message 4: Ask for description -->
+                <div class="message bot">
+                    <div class="bubble">Please describe the issue in detail.</div>
+                </div>
+
+                <div class="message user">
+                    <div class="bubble action-bubble">
+                        <div class="form-group">
+                            <textarea th:field="*{issueDescription}" class="form-control" placeholder="Describe what happened..." required></textarea>
+                            <span th:if="${#fields.hasErrors('issueDescription')}" th:errors="*{issueDescription}" class="error-message">Description Error</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bot Message 5: Ask for image -->
+                <div class="message bot">
+                    <div class="bubble">Upload an image if you have one (Optional).</div>
+                </div>
+
+                <div class="message user">
+                    <div class="bubble action-bubble">
+                        <div class="form-group">
+                            <input type="file" name="image" class="form-control" accept="image/*">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Submit Button Area -->
+                <div class="message user" style="margin-top: 20px; align-self: center; width: 100%;">
+                    <button type="submit" class="btn-submit">Raise Complaint</button>
+                </div>
+
+            </form>
         </div>
     </div>
 </body>

@@ -5,52 +5,45 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>All Complaints</title>
     <link rel="stylesheet" th:href="@{/css/chat.css}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div class="container">
-        <div class="top-actions" style="text-align: left; margin-bottom: 30px;">
-            <a th:href="@{/chat}" class="btn btn-secondary">Back to Chat</a>
+    <div class="list-container" style="width: 100%; padding: 20px;">
+        
+        <div class="page-header">
+            <div>
+                <h1 style="color: var(--text-dark); margin-bottom: 4px;">All Complaints</h1>
+                <p style="color: var(--text-light); font-size: 0.9rem;">View and track all registered issues</p>
+            </div>
+            <a th:href="@{/chat}" class="btn-secondary">Back to Chat</a>
         </div>
 
-        <h1 style="color: var(--text-main); margin-bottom: 20px;">All Complaints</h1>
-
-        <div th:if="${complaints == null or complaints.empty}">
+        <div th:if="${complaints == null or complaints.empty}" class="alert alert-success" style="background: white; border: 1px solid #EEEEEE; color: var(--text-light);">
             <p>No complaints have been registered yet.</p>
         </div>
 
-        <div class="table-responsive" th:if="${complaints != null and !complaints.empty}">
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Image</th>
-                        <th>User Name</th>
-                        <th>Location</th>
-                        <th>Issue Type</th>
-                        <th>Status</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr th:each="complaint : ${complaints}">
-                        <td th:text="${complaint.id}">1</td>
-                        <td>
-                            <img th:if="${complaint.imagePath != null}" th:src="@{'/' + ${complaint.imagePath}}" class="thumbnail" alt="Complaint Image">
-                            <span th:unless="${complaint.imagePath != null}" style="color: #999; font-size: 12px;">No Image</span>
-                        </td>
-                        <td th:text="${complaint.userName}">John Doe</td>
-                        <td th:text="${complaint.location}">Downtown</td>
-                        <td th:text="${complaint.issueType}">Plumbing</td>
-                        <td>
-                            <span th:class="'status-badge status-' + ${complaint.complaintStatus}" th:text="${complaint.complaintStatus}">IN_PROCESS</span>
-                        </td>
-                        <td>
-                            <a th:href="@{/complaints/{id}(id=${complaint.id})}" class="btn" style="padding: 5px 10px; font-size: 13px;">View</a>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
+        <div class="cards-grid" th:if="${complaints != null and !complaints.empty}">
+            <div class="card" th:each="complaint : ${complaints}">
+                <div class="card-img-container">
+                    <img th:if="${complaint.imagePath != null}" th:src="@{'/' + ${complaint.imagePath}}" class="card-img" alt="Complaint Image">
+                    <div th:unless="${complaint.imagePath != null}" class="no-img">
+                        <svg xmlns="http://www.svgrepo.com/show/330752/image.svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #CBD5E0;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                        <span>No Image</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <span th:class="'status-badge status-' + ${complaint.complaintStatus}" th:text="${complaint.complaintStatus}">OPEN</span>
+                    <h3 class="card-title" th:text="${complaint.issueType}">Issue Type</h3>
+                    <p class="card-text"><strong>ID:</strong> #<span th:text="${complaint.id}">1</span></p>
+                    <p class="card-text"><strong>User:</strong> <span th:text="${complaint.userName}">John Doe</span></p>
+                    <p class="card-text"><strong>Location:</strong> <span th:text="${complaint.location}">Downtown</span></p>
+                </div>
+                <div class="card-footer">
+                    <a th:href="@{/complaints/{id}(id=${complaint.id})}" class="btn-link">View Details &rarr;</a>
+                </div>
+            </div>
         </div>
+
     </div>
 </body>
 </html>
