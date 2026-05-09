@@ -1,5 +1,6 @@
 package com.complaint.complaintbot.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.langchain4j.model.chat.ChatLanguageModel;
 import dev.langchain4j.model.googleai.GoogleAiGeminiChatModel;
 import org.springframework.beans.factory.annotation.Value;
@@ -25,5 +26,10 @@ public class GeminiConfig {
                 .modelName(modelName)
                 .temperature(temperature)
                 .build();
+    }
+
+    @Bean
+    public ObjectMapper objectMapper() {
+        return new ObjectMapper();
     }
 }
