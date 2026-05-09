@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>ComplaintBot - Dashboard</title>
+    <link rel="stylesheet" th:href="@{/css/chat-dashboard.css}">
+    <!-- Add FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+<div class="sidebar">
+    <div class="sidebar-header">
+        <h2>Complaints</h2>
+    </div>
+    <div class="complaint-list">
+        <!-- Iterate complaints -->
+        <a th:each="complaint : ${complaints}" 
+           th:href="@{/chat(id=${complaint.id})}"
+           class="complaint-item" style="text-decoration: none; color: inherit;">
+            <div class="complaint-item-header">
+                <span class="complaint-type" th:text="${complaint.title != null && !complaint.title.isEmpty() ? complaint.title : complaint.issueType}">Type</span>
+                <span class="complaint-date" th:text="${#temporals.format(complaint.createdAt, 'dd MMM HH:mm')}">Date</span>
+            </div>
+            <div class="complaint-preview" th:text="${complaint.issueDescription}">Description</div>
+        </a>
+    </div>
+</div>
+
+<div class="main-area">
+    <div class="main-header">
+        <h2 th:text="${selectedComplaint != null ? 'Complaint Details' : 'New Complaint'}">New Complaint</h2>
+    </div>
+
+    <!-- Alert messages -->
+    <div th:if="${successMessage}" class="alert alert-success" style="position:absolute; top: 80px; left: 30px; right: 30px; z-index: 20;">
+        <span th:text="${successMessage}"></span>
+    </div>
+    <div th:if="${errorMessage}" class="alert alert-error" style="position:absolute; top: 80px; left: 30px; right: 30px; z-index: 20;">
+        <span th:text="${errorMessage}"></span>
+    </div>
+
+    <div class="chat-history">
+        <!-- If a complaint is selected, show it like a chat bubble -->
+        <div th:if="${selectedComplaint != null}" class="message sent">
+            <div class="message-meta">
+                <span th:text="${selectedComplaint.userName}"></span> • <span th:text="${selectedComplaint.location}"></span>
+            </div>
+            <div class="message-content">
+                <strong th:if="${selectedComplaint.title != null}" th:text="${selectedComplaint.title}" style="display:block; margin-bottom: 5px;"></strong>
+                <p style="white-space: pre-wrap;" th:text="${selectedComplaint.issueDescription}"></p>
+                <img th:if="${selectedComplaint.imagePath != null}" 
+                     th:src="@{${selectedComplaint.imagePath}}" 
+                     class="message-image" alt="Complaint Image"/>
+            </div>
+            <div class="message-meta" style="margin-top: 8px;">
+                Status: <strong th:text="${selectedComplaint.complaintStatus}"></strong>
+            </div>
+        </div>
+
+        <div th:if="${selectedComplaint == null}" class="welcome-state">
+            <h3>Welcome to ComplaintBot</h3>
+            <p>Select a complaint from the left or create a new one below.</p>
+        </div>
+    </div>
+
+    <!-- The Composer Area acts as the new complaint form -->
+    <div class="composer-area">
+        <form th:action="@{/chat/submit}" th:object="${complaintForm}" method="post" enctype="multipart/form-data" class="complaint-form">
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="title">Title (Optional)</label>
+                    <input type="text" id="title" th:field="*{title}" class="form-control" placeholder="Short summary">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="userName">Name</label>
+                    <input type="text" id="userName" th:field="*{userName}" class="form-control" placeholder="Your name" required>
+                    <div class="error-message" th:if="${#fields.hasErrors('userName')}" th:errors="*{userName}"></div>
+                </div>
+                <div class="form-group">
+                    <label for="location">Location</label>
+                    <input type="text" id="location" th:field="*{location}" class="form-control" placeholder="Location" required>
+                    <div class="error-message" th:if="${#fields.hasErrors('location')}" th:errors="*{location}"></div>
+                </div>
+                <div class="form-group">
+                    <label for="issueType">Issue Type</label>
+                    <select id="issueType" th:field="*{issueType}" class="form-control" required>
+                        <option value="">Select a type...</option>
+                        <option value="Maintenance">Maintenance</option>
+                        <option value="Cleaning">Cleaning</option>
+                        <option value="Security">Security</option>
+                        <option value="Other">Other</option>
+                    </select>
+                    <div class="error-message" th:if="${#fields.hasErrors('issueType')}" th:errors="*{issueType}"></div>
+                </div>
+            </div>
+
+            <div class="input-row">
+                <div class="file-upload-wrapper">
+                    <i class="fa-solid fa-plus plus-icon"></i>
+                    <input type="file" name="image" accept="image/*" title="Attach an image">
+                </div>
+                
+                <textarea id="issueDescription" th:field="*{issueDescription}" class="chat-input" placeholder="Type your complaint description here..." rows="2" required></textarea>
+                
+                <button type="submit" class="send-btn" title="Submit Complaint">
+                    <i class="fa-solid fa-paper-plane send-icon"></i>
+                </button>
+            </div>
+            <div class="error-message" th:if="${#fields.hasErrors('issueDescription')}" th:errors="*{issueDescription}" style="margin-left: 55px;"></div>
+            
+        </form>
+    </div>
+</div>
+
+<script>
+    // Auto-resize textarea
+    const tx = document.getElementsByTagName("textarea");
+    for (let i = 0; i < tx.length; i++) {
+        tx[i].setAttribute("style", "height:" + (tx[i].scrollHeight) + "px;overflow-y:hidden;");
+        tx[i].addEventListener("input", OnInput, false);
+    }
+
+    function OnInput() {
+        this.style.height = 0;
+        this.style.height = (this.scrollHeight) + "px";
+    }
+</script>
+
+</body>
+</html>
