@@ -48,13 +48,24 @@ public class ChatService {
         chat.setTitle(userMessage.length() > 60 ? userMessage.substring(0, 60) + "…" : userMessage);
         chatRepository.save(chat);
 
-        Message userMsg = persistMessage(chat.getId(), Message.MessageRole.USER, userMessage);
+        persistMessage(chat.getId(), Message.MessageRole.USER, userMessage);
 
-        String reply = geminiChatService.chat(List.of(), userMessage);
+        // Classify first: only navigate to the portal if it is a complaint
+        String reply;
+        ComplaintFilingResult filingResult = complaintFilingService.fileComplaint(chat.getId(), userMessage);
+        if (filingResult.isNotComplaint()) {
+            // Not a complaint — plain conversational reply, no browser navigation
+            reply = geminiChatService.chat(List.of(), userMessage);
+        } else {
+            // Is a complaint — reply comes from the filing / navigation result
+            reply = buildReplyFromFilingResult(filingResult);
+        }
 
-        Message assistantMsg = persistMessage(chat.getId(), Message.MessageRole.ASSISTANT, reply);
+        persistMessage(chat.getId(), Message.MessageRole.ASSISTANT, reply);
 
-        return ChatResponse.from(chat, List.of(MessageDto.from(userMsg), MessageDto.from(assistantMsg)));
+        List<MessageDto> allMessages = messageRepository.findByChatIdOrderByCreatedAtAsc(chat.getId())
+                .stream().map(MessageDto::from).toList();
+        return ChatResponse.from(chat, allMessages);
     }
 
     /**
@@ -75,8 +86,15 @@ public class ChatService {
             ComplaintFilingResult result = complaintFilingService.submitOtp(chatId, userMessage.trim());
             reply = buildReplyFromFilingResult(result);
         } else {
-            List<Message> history = messageRepository.findByChatIdOrderByCreatedAtAsc(chatId);
-            reply = geminiChatService.chat(history, userMessage);
+            // Classify the new message: only navigate to the portal if it is a complaint
+            ComplaintFilingResult filingResult = complaintFilingService.fileComplaint(chatId, userMessage);
+            if (filingResult.isNotComplaint()) {
+                // Not a complaint — plain conversational reply, no browser navigation
+                List<Message> history = messageRepository.findByChatIdOrderByCreatedAtAsc(chatId);
+                reply = geminiChatService.chat(history, userMessage);
+            } else {
+                reply = buildReplyFromFilingResult(filingResult);
+            }
         }
 
         persistMessage(chatId, Message.MessageRole.ASSISTANT, reply);
@@ -87,18 +105,21 @@ public class ChatService {
         return ChatResponse.from(chat, allMessages);
     }
 
-    /** Trigger the autonomous complaint filing flow for an existing chat. */
+    /**
+     * Explicitly trigger the autonomous complaint filing flow for an existing chat.
+     * This is kept for backward compatibility with the explicit /file endpoint.
+     */
     @Transactional
     public ComplaintFilingResult fileComplaint(UUID chatId) {
-        // Grab the first user message as the complaint text
+        // Grab the last user message as the complaint text
         List<Message> history = messageRepository.findByChatIdOrderByCreatedAtAsc(chatId);
-        String firstUserMessage = history.stream()
+        String lastUserMessage = history.stream()
                 .filter(m -> m.getRole() == Message.MessageRole.USER)
                 .map(Message::getContent)
-                .findFirst()
+                .reduce((first, second) -> second) // last element
                 .orElseThrow(() -> new IllegalArgumentException("No user message in chat: " + chatId));
 
-        ComplaintFilingResult result = complaintFilingService.fileComplaint(chatId, firstUserMessage);
+        ComplaintFilingResult result = complaintFilingService.fileComplaint(chatId, lastUserMessage);
 
         // Persist result as an assistant message
         persistMessage(chatId, Message.MessageRole.ASSISTANT, buildReplyFromFilingResult(result));
