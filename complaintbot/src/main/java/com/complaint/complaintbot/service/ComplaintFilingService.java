@@ -4,7 +4,6 @@ import com.complaint.complaintbot.dto.ComplaintDetails;
 import com.complaint.complaintbot.dto.ComplaintFilingResult;
 import com.complaint.complaintbot.dto.NavigationAction;
 import com.complaint.complaintbot.entity.BrowserSession;
-import com.complaint.complaintbot.entity.Message;
 import com.complaint.complaintbot.entity.SessionState;
 import com.complaint.complaintbot.repository.BrowserSessionRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;

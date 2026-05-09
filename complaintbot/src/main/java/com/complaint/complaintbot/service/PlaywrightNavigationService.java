@@ -2,7 +2,6 @@ package com.complaint.complaintbot.service;
 
 import com.complaint.complaintbot.dto.NavigationAction;
 import com.complaint.complaintbot.entity.BrowserSession;
-import com.complaint.complaintbot.entity.SessionState;
 import com.complaint.complaintbot.repository.BrowserSessionRepository;
 import com.microsoft.playwright.*;
 import com.microsoft.playwright.options.LoadState;
