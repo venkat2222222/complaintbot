@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Complaint Details</title>
+    <link rel="stylesheet" th:href="@{/css/chat.css}">
+</head>
+<body>
+    <div class="container">
+        <div class="top-actions" style="text-align: left; margin-bottom: 30px;">
+            <a th:href="@{/complaints}" class="btn btn-secondary">Back to All Complaints</a>
+        </div>
+
+        <div class="detail-card">
+            <h2 style="margin-top: 0; color: var(--primary-color);">Complaint #<span th:text="${complaint.id}">1</span></h2>
+            
+            <div class="detail-row">
+                <span class="detail-label">Status</span>
+                <span th:class="'status-badge status-' + ${complaint.complaintStatus}" th:text="${complaint.complaintStatus}">IN_PROCESS</span>
+            </div>
+
+            <div class="detail-row">
+                <span class="detail-label">User Name</span>
+                <span th:text="${complaint.userName}">John Doe</span>
+            </div>
+
+            <div class="detail-row">
+                <span class="detail-label">Location</span>
+                <span th:text="${complaint.location}">Downtown</span>
+            </div>
+
+            <div class="detail-row">
+                <span class="detail-label">Issue Type</span>
+                <span th:text="${complaint.issueType}">Plumbing</span>
+            </div>
+
+            <div class="detail-row">
+                <span class="detail-label">Issue Description</span>
+                <p style="margin: 0; white-space: pre-wrap;" th:text="${complaint.issueDescription}">Description text goes here...</p>
+            </div>
+
+            <div class="detail-row" th:if="${complaint.imagePath != null}">
+                <span class="detail-label">Uploaded Image</span>
+                <img th:src="@{'/' + ${complaint.imagePath}}" class="detail-image" alt="Complaint Image">
+            </div>
+            
+            <div class="detail-row" th:unless="${complaint.imagePath != null}">
+                <span class="detail-label">Uploaded Image</span>
+                <span style="color: #999;">No image was uploaded for this complaint.</span>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

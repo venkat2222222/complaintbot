@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Complaint Assistant</title>
+    <link rel="stylesheet" th:href="@{/css/chat.css}">
+</head>
+<body>
+    <div class="container">
+        <div class="top-actions">
+            <a th:href="@{/complaints}" class="btn">View All Complaints</a>
+        </div>
+
+        <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+        <div th:if="${errorMessage}" class="alert alert-error" th:text="${errorMessage}"></div>
+
+        <div class="chat-container">
+            <div class="chat-header">
+                <h1>Complaint Assistant</h1>
+                <p>Tell me your issue and I will register it for you</p>
+            </div>
+
+            <div class="chat-body">
+                <form th:action="@{/chat/submit}" th:object="${complaintForm}" method="post" enctype="multipart/form-data">
+                    
+                    <div class="message-bot">
+                        <div class="bubble-bot">Hi! I'm the complaint assistant. What is your name?</div>
+                    </div>
+                    <div class="message-user">
+                        <div class="bubble-user">
+                            <div class="form-group">
+                                <input type="text" th:field="*{userName}" class="form-control" placeholder="Enter your name">
+                                <span th:if="${#fields.hasErrors('userName')}" th:errors="*{userName}" class="error-text"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="message-bot">
+                        <div class="bubble-bot">Where is the issue located?</div>
+                    </div>
+                    <div class="message-user">
+                        <div class="bubble-user">
+                            <div class="form-group">
+                                <input type="text" th:field="*{location}" class="form-control" placeholder="Enter location">
+                                <span th:if="${#fields.hasErrors('location')}" th:errors="*{location}" class="error-text"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="message-bot">
+                        <div class="bubble-bot">What type of issue is this?</div>
+                    </div>
+                    <div class="message-user">
+                        <div class="bubble-user">
+                            <div class="form-group">
+                                <input type="text" th:field="*{issueType}" class="form-control" placeholder="E.g. Plumbing, Electrical, Cleaning">
+                                <span th:if="${#fields.hasErrors('issueType')}" th:errors="*{issueType}" class="error-text"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="message-bot">
+                        <div class="bubble-bot">Please describe the issue in detail.</div>
+                    </div>
+                    <div class="message-user">
+                        <div class="bubble-user">
+                            <div class="form-group">
+                                <textarea th:field="*{issueDescription}" class="form-control" placeholder="Describe the issue..."></textarea>
+                                <span th:if="${#fields.hasErrors('issueDescription')}" th:errors="*{issueDescription}" class="error-text"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="message-bot">
+                        <div class="bubble-bot">Upload an image if you have one (Optional).</div>
+                    </div>
+                    <div class="message-user">
+                        <div class="bubble-user">
+                            <div class="form-group">
+                                <input type="file" name="image" class="form-control" accept="image/jpeg, image/png">
+                            </div>
+                            <button type="submit" class="btn" style="width: 100%; margin-top: 10px;">Raise Complaint</button>
+                        </div>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

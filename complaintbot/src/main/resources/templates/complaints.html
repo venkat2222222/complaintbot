@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>All Complaints</title>
+    <link rel="stylesheet" th:href="@{/css/chat.css}">
+</head>
+<body>
+    <div class="container">
+        <div class="top-actions" style="text-align: left; margin-bottom: 30px;">
+            <a th:href="@{/chat}" class="btn btn-secondary">Back to Chat</a>
+        </div>
+
+        <h1 style="color: var(--text-main); margin-bottom: 20px;">All Complaints</h1>
+
+        <div th:if="${complaints == null or complaints.empty}">
+            <p>No complaints have been registered yet.</p>
+        </div>
+
+        <div class="table-responsive" th:if="${complaints != null and !complaints.empty}">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Image</th>
+                        <th>User Name</th>
+                        <th>Location</th>
+                        <th>Issue Type</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="complaint : ${complaints}">
+                        <td th:text="${complaint.id}">1</td>
+                        <td>
+                            <img th:if="${complaint.imagePath != null}" th:src="@{'/' + ${complaint.imagePath}}" class="thumbnail" alt="Complaint Image">
+                            <span th:unless="${complaint.imagePath != null}" style="color: #999; font-size: 12px;">No Image</span>
+                        </td>
+                        <td th:text="${complaint.userName}">John Doe</td>
+                        <td th:text="${complaint.location}">Downtown</td>
+                        <td th:text="${complaint.issueType}">Plumbing</td>
+                        <td>
+                            <span th:class="'status-badge status-' + ${complaint.complaintStatus}" th:text="${complaint.complaintStatus}">IN_PROCESS</span>
+                        </td>
+                        <td>
+                            <a th:href="@{/complaints/{id}(id=${complaint.id})}" class="btn" style="padding: 5px 10px; font-size: 13px;">View</a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+</html>
